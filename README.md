@@ -54,6 +54,16 @@ For running scripts in offscreen mode, use `--script` flags:
 docker run -v $(pwd):/data chimerax:latest --script /data/demo-script.cxc
 ```
 
+**For Network/Shared Drives (NFS, SMB, etc.):** If you're using a network-mounted or shared drive with root squashing enabled, run the container as your host user to avoid permission issues:
+
+```bash
+docker run -u $(id -u):$(id -g) -v $(pwd):/data chimerax:latest --cmd "open 2gbp; save /data/2gbp.png"
+```
+
+**Note on File Permissions:** 
+- **Local directories:** The container runs as root by default, which works for most local filesystems. Docker Desktop (macOS/Windows) automatically maps file ownership to your host user.
+- **Network-mounted drives (NFS with root squash):** Use the `-u $(id -u):$(id -g)` flag to run as your host user. The entrypoint script will configure ChiMeraX to work with your user ID.
+
 ## Examples
 
 ### Generating an Image
@@ -68,6 +78,41 @@ docker run -v $(pwd):/data chimerax:latest --script "open /data/test.pdb; save /
 ```
 
 This will create an image `output_image.png` in your current directory.
+
+## Troubleshooting
+
+### Permission Denied Errors
+
+If you encounter "Permission denied" errors when trying to save files, this is typically due to **network-mounted or shared drives with root squashing** (a common NFS security feature).
+
+**Quick Fix:** Use the `-u` flag to run as your host user:
+```bash
+docker run -u $(id -u):$(id -g) -v $(pwd):/data chimerax:latest --cmd "open 2gbp; save /data/test.png"
+```
+
+**Understanding the Issue:**
+
+1. **Root Squashing on NFS**: Many shared/network drives map container root (UID 0) to an unprivileged user (`nobody`), preventing write access.
+
+2. **Test in local directory first**: To isolate the issue, try running in your home directory:
+   ```bash
+   cd ~/test-chimerax
+   docker run -v $(pwd):/data chimerax:latest --cmd "open 2gbp; save /data/test.png"
+   ```
+
+3. **Check if you're on a network mount**:
+   ```bash
+   df -T $(pwd)  # Look for nfs, cifs, smb in the Type column
+   ```
+
+4. **Verify directory permissions**:
+   ```bash
+   ls -ld $(pwd)  # Should be writable by your user
+   ```
+
+**File Ownership:**
+- Without `-u` flag: Files owned by root (or `nobody` on NFS with root squash)
+- With `-u $(id -u):$(id -g)`: Files owned by your host user
 
 ## Contributing
 

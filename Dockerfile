@@ -12,19 +12,13 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y gdebi-co
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user and switch to it
-RUN useradd -m chimeraxuser
-USER chimeraxuser
-
-# Set the home directory
-ENV HOME=/home/chimeraxuser
-
-# Set XDG_RUNTIME_DIR to avoid warning
-ENV XDG_RUNTIME_DIR=/tmp/runtime-chimeraxuser
+# Copy and set up entrypoint script
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Set the working directory
 VOLUME /data
 WORKDIR /data
 
-# Set the entry point to ChimeraX
-ENTRYPOINT ["chimerax", "--offscreen"]
+# Set the entry point to our wrapper script
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
