@@ -57,12 +57,18 @@ docker run -v $(pwd):/data chimerax:latest --script /data/demo-script.cxc
 **For Network/Shared Drives (NFS, SMB, etc.):** If you're using a network-mounted or shared drive with root squashing enabled, run the container as your host user to avoid permission issues:
 
 ```bash
-docker run -u $(id -u):$(id -g) -v $(pwd):/data chimerax:latest --cmd "open 2gbp; save /data/2gbp.png"
+docker run --user $(id -u):$(id -g) -v $(pwd):/data chimerax:latest --cmd "open 2gbp; save /data/2gbp.png"
+```
+
+If you encounter a `setgroups: invalid argument` error, try using only the user ID without the group:
+
+```bash
+docker run --user $(id -u) -v $(pwd):/data chimerax:latest --cmd "open 2gbp; save /data/2gbp.png"
 ```
 
 **Note on File Permissions:** 
 - **Local directories:** The container runs as root by default, which works for most local filesystems. Docker Desktop (macOS/Windows) automatically maps file ownership to your host user.
-- **Network-mounted drives (NFS with root squash):** Use the `-u $(id -u):$(id -g)` flag to run as your host user. The entrypoint script will configure ChiMeraX to work with your user ID.
+- **Network-mounted drives (NFS with root squash):** Use the `--user $(id -u)` flag to run as your host user. The entrypoint script will configure ChiMeraX to work with your user ID.
 
 ## Examples
 
@@ -85,16 +91,23 @@ This will create an image `output_image.png` in your current directory.
 
 If you encounter "Permission denied" errors when trying to save files, this is typically due to **network-mounted or shared drives with root squashing** (a common NFS security feature).
 
-**Quick Fix:** Use the `-u` flag to run as your host user:
+**Quick Fix:** Use the `--user` flag to run as your host user:
 ```bash
-docker run -u $(id -u):$(id -g) -v $(pwd):/data chimerax:latest --cmd "open 2gbp; save /data/test.png"
+docker run --user $(id -u):$(id -g) -v $(pwd):/data chimerax:latest --cmd "open 2gbp; save /data/test.png"
+```
+
+If you get a `setgroups: invalid argument` error, use only the user ID:
+```bash
+docker run --user $(id -u) -v $(pwd):/data chimerax:latest --cmd "open 2gbp; save /data/test.png"
 ```
 
 **Understanding the Issue:**
 
 1. **Root Squashing on NFS**: Many shared/network drives map container root (UID 0) to an unprivileged user (`nobody`), preventing write access.
 
-2. **Test in local directory first**: To isolate the issue, try running in your home directory:
+2. **The `setgroups` Error**: If you see `unable to setup user: setgroups: invalid argument`, this means your host GID doesn't exist in the container. Using only `--user $(id -u)` (without the GID) avoids this issue while still running as your user.
+
+3. **Test in local directory first**: To isolate the issue, try running in your home directory:
    ```bash
    cd ~/test-chimerax
    docker run -v $(pwd):/data chimerax:latest --cmd "open 2gbp; save /data/test.png"
@@ -111,8 +124,8 @@ docker run -u $(id -u):$(id -g) -v $(pwd):/data chimerax:latest --cmd "open 2gbp
    ```
 
 **File Ownership:**
-- Without `-u` flag: Files owned by root (or `nobody` on NFS with root squash)
-- With `-u $(id -u):$(id -g)`: Files owned by your host user
+- Without `--user` flag: Files owned by root (or `nobody` on NFS with root squash)
+- With `--user $(id -u)`: Files owned by your host user
 
 ## Contributing
 
