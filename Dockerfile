@@ -1,9 +1,9 @@
-# Use Ubuntu 22.04 LTS as base image
-FROM ubuntu:22.04
+# Use Ubuntu 24.04 LTS as base image to match ChimeraX package
+FROM ubuntu:24.04
 
 # Download ChimeraX .deb package from the UCSF website and accept the license agreement
-# https://www.cgl.ucsf.edu/chimerax/cgi-bin/secure/chimerax-get.py?file=1.7/ubuntu-22.04/ucsf-chimerax_1.7.1ubuntu22.04_amd64.deb
-COPY ucsf-chimerax_1.7.1ubuntu22.04_amd64.deb chimerax.deb
+# https://www.cgl.ucsf.edu/chimerax/cgi-bin/secure/chimerax-get.py?file=1.10/ubuntu-24.04/ucsf-chimerax_1.10.1ubuntu24.04_amd64.deb
+COPY ucsf-chimerax_1.10.1ubuntu24.04_amd64.deb chimerax.deb
 
 # Install ChimeraX with gdebi and clean up
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y gdebi-core \
